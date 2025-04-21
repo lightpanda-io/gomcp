@@ -32,7 +32,7 @@ type Capabilities map[string]Capability
 
 const InitializeMethod = "initialize"
 
-type ClientInfo struct {
+type Info struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 }
@@ -40,14 +40,14 @@ type ClientInfo struct {
 type InitializeRequest struct {
 	rpc.Request
 	Params struct {
-		ProtocolVersion string       `json:"protocol_version"`
-		ClientInfo      ClientInfo   `json:"client_info"`
+		ProtocolVersion string       `json:"protocolVersion"`
+		ClientInfo      Info         `json:"clientInfo"`
 		Capabilities    Capabilities `json:"capabilities"`
 	} `json:"params"`
 }
 
 type InitializeResponse struct {
-	ProtocolVersion string       `json:"protocol_version"`
-	ClientInfo      ClientInfo   `json:"client_info"`
+	ProtocolVersion string       `json:"protocolVersion"`
+	ServerInfo      Info         `json:"serverInfo"`
 	Capabilities    Capabilities `json:"capabilities"`
 }

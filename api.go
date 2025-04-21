@@ -23,8 +23,9 @@ func runapi(ctx context.Context, addr string) error {
 
 	mux.HandleFunc("GET /ack", func(_ http.ResponseWriter, _ *http.Request) {})
 
-	mux.HandleFunc("GET /sse", handleSSE(ctx, sessions))
-	mux.HandleFunc("POST /messages", handleMessage(ctx, sessions))
+	mux.HandleFunc("GET /sse", cors(handleSSE(ctx, sessions)))
+	mux.HandleFunc("POST /messages", cors(handleMessage(ctx, sessions)))
+	mux.HandleFunc("OPTIONS /messages", cors(handleMessage(ctx, sessions)))
 
 	srv := &http.Server{
 		Addr:    addr,
@@ -58,11 +59,28 @@ func runapi(ctx context.Context, addr string) error {
 	return nil
 }
 
-func handleSSE(ctx context.Context, sessions *Sessions) func(http.ResponseWriter, *http.Request) {
+func cors(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("access-control-allow-credentials", "true")
+		w.Header().Set("access-control-allow-origin", "*")
+
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
+
+		if req.Method == http.MethodOptions {
+			w.Header().Set("access-control-allow-methods", "GET,POST")
+			w.Header().Set("access-control-allow-headers", "content-type,Accept,Authorization")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next(w, req)
+	}
+}
+
+func handleSSE(ctx context.Context, sessions *Sessions) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
 
 		s := NewSession()
 		defer s.Close()
@@ -106,7 +124,7 @@ func handleSSE(ctx context.Context, sessions *Sessions) func(http.ResponseWriter
 				case mcp.InitializeRequest:
 					send("message", rpc.NewResponse(mcp.InitializeResponse{
 						ProtocolVersion: mcp.Version,
-						ClientInfo: mcp.ClientInfo{
+						ServerInfo: mcp.Info{
 							Name:    "lightpanda go mcp",
 							Version: "1.0.0",
 						},
@@ -123,7 +141,7 @@ func handleSSE(ctx context.Context, sessions *Sessions) func(http.ResponseWriter
 	}
 }
 
-func handleMessage(_ context.Context, sessions *Sessions) func(http.ResponseWriter, *http.Request) {
+func handleMessage(_ context.Context, sessions *Sessions) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// get the sessionId
 		var id SessionId
@@ -173,6 +191,5 @@ func handleMessage(_ context.Context, sessions *Sessions) func(http.ResponseWrit
 		s.Requests() <- mcpreq
 
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte("Accepted"))
 	}
 }
