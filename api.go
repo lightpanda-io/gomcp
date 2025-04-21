@@ -130,6 +130,8 @@ func handleSSE(ctx context.Context, sessions *Sessions) http.HandlerFunc {
 						},
 						Capabilities: mcp.Capabilities{"tools": mcp.Capability{}},
 					}, r.Request.Id))
+				case mcp.ToolsListRequest:
+					// TODO
 				}
 			case <-req.Context().Done():
 				return

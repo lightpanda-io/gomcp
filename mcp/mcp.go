@@ -22,6 +22,10 @@ func Decode(r rpc.Request) (Request, error) {
 		}
 
 		return rr, nil
+	case NotificationsInitializedMethod:
+		return NotificationsInitializedRequest(r), nil
+	case ToolsListMethod:
+		return ToolsListRequest(r), nil
 	}
 
 	return nil, fmt.Errorf("invalid mcp: %s", r.Method)
@@ -51,3 +55,11 @@ type InitializeResponse struct {
 	ServerInfo      Info         `json:"serverInfo"`
 	Capabilities    Capabilities `json:"capabilities"`
 }
+
+const NotificationsInitializedMethod = "notifications/initialized"
+
+type NotificationsInitializedRequest rpc.Request
+
+const ToolsListMethod = "tools/list"
+
+type ToolsListRequest rpc.Request
