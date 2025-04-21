@@ -26,6 +26,13 @@ func Decode(r rpc.Request) (Request, error) {
 		return NotificationsInitializedRequest(r), nil
 	case ToolsListMethod:
 		return ToolsListRequest(r), nil
+	case ToolsCallMethod:
+		rr := ToolsCallRequest{Request: r}
+		if err := json.Unmarshal(r.Params, &rr.Params); err != nil {
+			return nil, fmt.Errorf("decode: %w", err)
+		}
+
+		return rr, nil
 	}
 
 	return nil, fmt.Errorf("invalid mcp: %s", r.Method)
@@ -63,3 +70,17 @@ type NotificationsInitializedRequest rpc.Request
 const ToolsListMethod = "tools/list"
 
 type ToolsListRequest rpc.Request
+
+type ToolsListResponse struct {
+	Tools []Tool `json:"tools"`
+}
+
+const ToolsCallMethod = "tools/call"
+
+type ToolsCallRequest struct {
+	rpc.Request
+	Params struct {
+		Name      string
+		Arguments map[string]json.RawMessage
+	}
+}

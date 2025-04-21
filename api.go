@@ -23,7 +23,19 @@ func runapi(ctx context.Context, addr string) error {
 
 	mux.HandleFunc("GET /ack", func(_ http.ResponseWriter, _ *http.Request) {})
 
-	mux.HandleFunc("GET /sse", cors(handleSSE(ctx, sessions)))
+	tools := []mcp.Tool{
+		{
+			Name:        "hello world",
+			Description: "Hello World",
+			InputSchema: mcp.NewSchemaObject(
+				mcp.Properties{
+					"name": mcp.NewSchemaString(),
+				},
+			),
+		},
+	}
+
+	mux.HandleFunc("GET /sse", cors(handleSSE(ctx, sessions, tools)))
 	mux.HandleFunc("POST /messages", cors(handleMessage(ctx, sessions)))
 	mux.HandleFunc("OPTIONS /messages", cors(handleMessage(ctx, sessions)))
 
@@ -78,7 +90,7 @@ func cors(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func handleSSE(ctx context.Context, sessions *Sessions) http.HandlerFunc {
+func handleSSE(ctx context.Context, sessions *Sessions, tools []mcp.Tool) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 
@@ -131,7 +143,11 @@ func handleSSE(ctx context.Context, sessions *Sessions) http.HandlerFunc {
 						Capabilities: mcp.Capabilities{"tools": mcp.Capability{}},
 					}, r.Request.Id))
 				case mcp.ToolsListRequest:
-					// TODO
+					send("message", rpc.NewResponse(mcp.ToolsListResponse{
+						Tools: tools,
+					}, r.Id))
+				case mcp.ToolsCallRequest:
+					fmt.Println(r.Params.Arguments)
 				}
 			case <-req.Context().Done():
 				return
