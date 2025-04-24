@@ -16,16 +16,8 @@ import (
 
 // runapi starts http API server.
 // Cancelling ctx will shutdown the http server gracefully.
-func runapi(ctx context.Context, addr string) error {
+func runapi(ctx context.Context, addr string, mcpsrv *MCPServer) error {
 	sessions := NewSessions()
-
-	mcpsrv := MCPServer{
-		Name:    "lightpanda go mcp",
-		Version: "1.0.0",
-		Tools: []MCPTool{
-			Helloworld{},
-		},
-	}
 
 	mux := http.NewServeMux()
 
@@ -86,8 +78,10 @@ func cors(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func handleSSE(ctx context.Context, sessions *Sessions, srv MCPServer) http.HandlerFunc {
+func handleSSE(_ context.Context, sessions *Sessions, srv *MCPServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+
 		w.Header().Set("Content-Type", "text/event-stream")
 
 		s := NewSession()
@@ -98,6 +92,10 @@ func handleSSE(ctx context.Context, sessions *Sessions, srv MCPServer) http.Hand
 
 		slog.Debug("connect sse", slog.Any("id", s.id))
 		defer slog.Debug("disconnect sse", slog.Any("id", s.id))
+
+		// create the mcpconn
+		mcpconn := srv.NewConn()
+		defer mcpconn.Close()
 
 		f, ok := w.(http.Flusher)
 		if !ok {
@@ -143,7 +141,7 @@ func handleSSE(ctx context.Context, sessions *Sessions, srv MCPServer) http.Hand
 						Tools: srv.ListTools(),
 					}, r.Id))
 				case mcp.ToolsCallRequest:
-					res, err := srv.CallTool(r)
+					res, err := srv.CallTool(ctx, mcpconn, r)
 
 					if err != nil {
 						slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))

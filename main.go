@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/chromedp/chromedp"
 )
 
 const (
@@ -33,6 +35,7 @@ func main() {
 
 const (
 	ApiDefaultAddress = "127.0.0.1:8081"
+	CdpWSDefault      = "ws://127.0.0.1:9222"
 )
 
 func run(ctx context.Context, args []string, _, stderr io.Writer) error {
@@ -43,6 +46,7 @@ func run(ctx context.Context, args []string, _, stderr io.Writer) error {
 	var (
 		verbose = flags.Bool("verbose", false, "enable debug log level")
 		apiaddr = flags.String("api-addr", env("MCP_API_ADDRESS", ApiDefaultAddress), "http api server address")
+		cdpws   = flags.String("cdp", env("MCP_CDP", CdpWSDefault), "cdp ws to connect")
 	)
 
 	// usage func declaration.
@@ -54,6 +58,7 @@ func run(ctx context.Context, args []string, _, stderr io.Writer) error {
 		flags.PrintDefaults()
 		fmt.Fprintf(stderr, "\nEnvironment vars:\n")
 		fmt.Fprintf(stderr, "\tMCP_API_ADDRESS\t\tdefault %s\n", ApiDefaultAddress)
+		fmt.Fprintf(stderr, "\tMCP_CDP\tdefault %s\n", CdpWSDefault)
 	}
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
@@ -69,7 +74,14 @@ func run(ctx context.Context, args []string, _, stderr io.Writer) error {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
-	return runapi(ctx, *apiaddr)
+	cdpctx, cancel := chromedp.NewRemoteAllocator(ctx,
+		*cdpws, chromedp.NoModifyURL,
+	)
+	defer cancel()
+
+	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
+
+	return runapi(ctx, *apiaddr, mcpsrv)
 }
 
 // env returns the env value corresponding to the key or the default string.
