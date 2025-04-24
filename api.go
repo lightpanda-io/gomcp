@@ -19,23 +19,19 @@ import (
 func runapi(ctx context.Context, addr string) error {
 	sessions := NewSessions()
 
+	mcpsrv := MCPServer{
+		Name:    "lightpanda go mcp",
+		Version: "1.0.0",
+		Tools: []MCPTool{
+			Helloworld{},
+		},
+	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /ack", func(_ http.ResponseWriter, _ *http.Request) {})
 
-	tools := []mcp.Tool{
-		{
-			Name:        "hello world",
-			Description: "Hello World",
-			InputSchema: mcp.NewSchemaObject(
-				mcp.Properties{
-					"name": mcp.NewSchemaString(),
-				},
-			),
-		},
-	}
-
-	mux.HandleFunc("GET /sse", cors(handleSSE(ctx, sessions, tools)))
+	mux.HandleFunc("GET /sse", cors(handleSSE(ctx, sessions, mcpsrv)))
 	mux.HandleFunc("POST /messages", cors(handleMessage(ctx, sessions)))
 	mux.HandleFunc("OPTIONS /messages", cors(handleMessage(ctx, sessions)))
 
@@ -90,7 +86,7 @@ func cors(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func handleSSE(ctx context.Context, sessions *Sessions, tools []mcp.Tool) http.HandlerFunc {
+func handleSSE(ctx context.Context, sessions *Sessions, srv MCPServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 
@@ -144,10 +140,29 @@ func handleSSE(ctx context.Context, sessions *Sessions, tools []mcp.Tool) http.H
 					}, r.Request.Id))
 				case mcp.ToolsListRequest:
 					send("message", rpc.NewResponse(mcp.ToolsListResponse{
-						Tools: tools,
+						Tools: srv.ListTools(),
 					}, r.Id))
 				case mcp.ToolsCallRequest:
-					fmt.Println(r.Params.Arguments)
+					res, err := srv.CallTool(r)
+
+					if err != nil {
+						slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
+						send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+							IsError: true,
+							Content: []mcp.ToolsCallContent{{
+								Type: "text",
+								Text: err.Error(),
+							}},
+						}, r.Id))
+						break
+					}
+
+					send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+						Content: []mcp.ToolsCallContent{{
+							Type: "text",
+							Text: res,
+						}},
+					}, r.Id))
 				}
 			case <-req.Context().Done():
 				return
@@ -171,6 +186,7 @@ func handleMessage(_ context.Context, sessions *Sessions) http.HandlerFunc {
 		// retrieve the session
 		s, ok := sessions.Get(SessionId(id))
 		if !ok {
+			slog.Debug("invalid session id", slog.Any("id", id))
 			http.Error(w, "id not found", http.StatusBadRequest)
 			return
 		}
@@ -187,13 +203,14 @@ func handleMessage(_ context.Context, sessions *Sessions) http.HandlerFunc {
 		slog.Debug("message", slog.Any("id", id), slog.String("method", rreq.Method))
 
 		if err := rreq.Validate(); err != nil {
+			slog.Debug("bad jsonrpc request", slog.Any("err", err))
 			http.Error(w, "bad jsonrpc request", http.StatusBadRequest)
 			return
 		}
 
 		if err := rreq.Err(); err != nil {
 			// TODO disconnect the client?
-			slog.Error("jsonrpc", slog.Any("err", err), slog.Any("rreq", rreq))
+			slog.Error("client jsonrpc error", slog.Any("err", err), slog.Any("rreq", rreq))
 			w.WriteHeader(http.StatusAccepted)
 			w.Write([]byte("Accepted"))
 			return

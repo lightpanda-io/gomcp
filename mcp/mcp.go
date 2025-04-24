@@ -81,6 +81,16 @@ type ToolsCallRequest struct {
 	rpc.Request
 	Params struct {
 		Name      string
-		Arguments map[string]json.RawMessage
+		Arguments json.RawMessage
 	}
+}
+
+type ToolsCallContent struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type ToolsCallResponse struct {
+	IsError bool               `json:"isError"`
+	Content []ToolsCallContent `json:"content"`
 }
