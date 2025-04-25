@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/lightpanda-io/go-mcp-demo/rpc"
+	"github.com/lightpanda-io/gomcp/rpc"
 )
 
 // https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2025-03-26/schema.ts

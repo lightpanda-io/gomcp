@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lightpanda-io/go-mcp-demo/mcp"
+	"github.com/lightpanda-io/gomcp/mcp"
 )
 
 var InvalidSessionId = errors.New("invalid session id")

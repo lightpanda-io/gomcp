@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/gin-contrib/sse"
-	"github.com/lightpanda-io/go-mcp-demo/mcp"
-	"github.com/lightpanda-io/go-mcp-demo/rpc"
+	"github.com/lightpanda-io/gomcp/mcp"
+	"github.com/lightpanda-io/gomcp/rpc"
 )
 
 // runapi starts http API server.

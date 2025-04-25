@@ -1,4 +1,4 @@
-module github.com/lightpanda-io/go-mcp-demo
+module github.com/lightpanda-io/gomcp
 
 go 1.24.2
 

@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/chromedp/chromedp"
-	"github.com/lightpanda-io/go-mcp-demo/mcp"
+	"github.com/lightpanda-io/gomcp/mcp"
 )
 
 // A connection with a client
