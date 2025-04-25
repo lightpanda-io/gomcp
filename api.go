@@ -141,26 +141,36 @@ func handleSSE(_ context.Context, sessions *Sessions, srv *MCPServer) http.Handl
 						Tools: srv.ListTools(),
 					}, r.Id))
 				case mcp.ToolsCallRequest:
-					res, err := srv.CallTool(ctx, mcpconn, r)
+					slog.Debug("call tool", slog.String("name", r.Params.Name), slog.Int("id", r.Id))
+					go func() {
+						res, err := srv.CallTool(ctx, mcpconn, r)
 
-					if err != nil {
-						slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
+						if err != nil {
+							slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
+							send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+								IsError: true,
+								Content: []mcp.ToolsCallContent{{
+									Type: "text",
+									Text: err.Error(),
+								}},
+							}, r.Id))
+							return
+						}
+
 						send("message", rpc.NewResponse(mcp.ToolsCallResponse{
-							IsError: true,
 							Content: []mcp.ToolsCallContent{{
 								Type: "text",
-								Text: err.Error(),
+								Text: res,
 							}},
 						}, r.Id))
-						break
-					}
+					}()
 
-					send("message", rpc.NewResponse(mcp.ToolsCallResponse{
-						Content: []mcp.ToolsCallContent{{
-							Type: "text",
-							Text: res,
-						}},
-					}, r.Id))
+				case mcp.NotificationsCancelledRequest:
+					slog.Debug("cancelled",
+						slog.Int("id", r.Params.RequestId),
+						slog.String("reason", r.Params.Reason),
+					)
+					// TODO cancel the corresponding request.
 				}
 			case <-req.Context().Done():
 				return

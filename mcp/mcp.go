@@ -24,6 +24,13 @@ func Decode(r rpc.Request) (Request, error) {
 		return rr, nil
 	case NotificationsInitializedMethod:
 		return NotificationsInitializedRequest(r), nil
+	case NotificationsCancelledMethod:
+		rr := NotificationsCancelledRequest{Request: r}
+		if err := json.Unmarshal(r.Params, &rr.Params); err != nil {
+			return nil, fmt.Errorf("decode: %w", err)
+		}
+
+		return rr, nil
 	case ToolsListMethod:
 		return ToolsListRequest(r), nil
 	case ToolsCallMethod:
@@ -67,6 +74,16 @@ const NotificationsInitializedMethod = "notifications/initialized"
 
 type NotificationsInitializedRequest rpc.Request
 
+const NotificationsCancelledMethod = "notifications/cancelled"
+
+type NotificationsCancelledRequest struct {
+	rpc.Request
+	Params struct {
+		RequestId int    `json:"requestId"`
+		Reason    string `json:"reason"`
+	}
+}
+
 const ToolsListMethod = "tools/list"
 
 type ToolsListRequest rpc.Request
@@ -80,9 +97,12 @@ const ToolsCallMethod = "tools/call"
 type ToolsCallRequest struct {
 	rpc.Request
 	Params struct {
-		Name      string
-		Arguments json.RawMessage
-	}
+		Name      string          `json:"name"`
+		Arguments json.RawMessage `json:"arguments"`
+		Meta      struct {
+			ProgressToken int `json:"progressToken"`
+		} `json:"_meta"`
+	} `json:"params"`
 }
 
 type ToolsCallContent struct {
