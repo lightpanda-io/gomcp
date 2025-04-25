@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 	"github.com/lightpanda-io/go-mcp-demo/mcp"
 )
@@ -74,28 +72,6 @@ func (c *MCPConn) GetHTML() (string, error) {
 	return content, nil
 }
 
-// Return all links from a page
-func (c *MCPConn) GetLinks() ([]string, error) {
-	if c.cdpctx == nil {
-		return nil, errors.New("no browser connection, try to use goto first")
-	}
-
-	var a []*cdp.Node
-	if err := chromedp.Run(c.cdpctx, chromedp.Nodes(`a[href]`, &a)); err != nil {
-		return nil, fmt.Errorf("get links: %w", err)
-	}
-
-	links := make([]string, 0, len(a))
-	for _, aa := range a {
-		v, ok := aa.Attribute("href")
-		if ok {
-			links = append(links, v)
-		}
-	}
-
-	return links, nil
-}
-
 type MCPServer struct {
 	Name    string
 	Version string
@@ -132,11 +108,6 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 			Description: "Get the full HTML of the opened page",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
-		{
-			Name:        "links",
-			Description: "list all links visibles in the opened page",
-			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
-		},
 	}
 }
 
@@ -161,12 +132,6 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 		return conn.Goto(args.URL)
 	case "html":
 		return conn.GetHTML()
-	case "links":
-		links, err := conn.GetLinks()
-		if err != nil {
-			return "", err
-		}
-		return strings.Join(links, "\n"), nil
 	}
 
 	// no tool found
