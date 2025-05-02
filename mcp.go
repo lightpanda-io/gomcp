@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 
 	"github.com/chromedp/chromedp"
 	"github.com/lightpanda-io/gomcp/mcp"
+	"github.com/lightpanda-io/gomcp/rpc"
 )
 
 // A connection with a client
@@ -136,4 +139,89 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 
 	// no tool found
 	return "", ErrNoTool
+}
+
+var ErrRPCRequest = errors.New("rpc request error")
+
+// Decode a message
+func (s *MCPServer) Decode(in io.Reader) (mcp.Request, error) {
+	var empty mcp.Request
+
+	dec := json.NewDecoder(in)
+	var rreq rpc.Request
+	if err := dec.Decode(&rreq); err != nil {
+		return empty, fmt.Errorf("json decode: %w", err)
+	}
+
+	if err := rreq.Validate(); err != nil {
+		return empty, fmt.Errorf("rpc validate: %w", err)
+	}
+
+	// The rpc request contains an error.
+	if err := rreq.Err(); err != nil {
+		return empty, errors.Join(ErrRPCRequest, rreq.Err())
+	}
+
+	mcpreq, err := mcp.Decode(rreq)
+	if err != nil {
+		return empty, fmt.Errorf("mcp validate: %w", err)
+	}
+
+	return mcpreq, err
+}
+
+type SendFn func(string, any) error
+
+func (s *MCPServer) Handle(
+	ctx context.Context,
+	rreq mcp.Request,
+	mcpconn *MCPConn,
+	send SendFn,
+) {
+	switch r := rreq.(type) {
+	case mcp.InitializeRequest:
+		send("message", rpc.NewResponse(mcp.InitializeResponse{
+			ProtocolVersion: mcp.Version,
+			ServerInfo: mcp.Info{
+				Name:    "lightpanda go mcp",
+				Version: "1.0.0",
+			},
+			Capabilities: mcp.Capabilities{"tools": mcp.Capability{}},
+		}, r.Request.Id))
+	case mcp.ToolsListRequest:
+		send("message", rpc.NewResponse(mcp.ToolsListResponse{
+			Tools: s.ListTools(),
+		}, r.Id))
+	case mcp.ToolsCallRequest:
+		slog.Debug("call tool", slog.String("name", r.Params.Name), slog.Int("id", r.Id))
+		go func() {
+			res, err := s.CallTool(ctx, mcpconn, r)
+
+			if err != nil {
+				slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
+				send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+					IsError: true,
+					Content: []mcp.ToolsCallContent{{
+						Type: "text",
+						Text: err.Error(),
+					}},
+				}, r.Id))
+				return
+			}
+
+			send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+				Content: []mcp.ToolsCallContent{{
+					Type: "text",
+					Text: res,
+				}},
+			}, r.Id))
+		}()
+
+	case mcp.NotificationsCancelledRequest:
+		slog.Debug("cancelled",
+			slog.Int("id", r.Params.RequestId),
+			slog.String("reason", r.Params.Reason),
+		)
+		// TODO cancel the corresponding request.
+	}
 }

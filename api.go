@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,8 +9,6 @@ import (
 	"net/http"
 
 	"github.com/gin-contrib/sse"
-	"github.com/lightpanda-io/gomcp/mcp"
-	"github.com/lightpanda-io/gomcp/rpc"
 )
 
 // runapi starts http API server.
@@ -24,8 +21,8 @@ func runapi(ctx context.Context, addr string, mcpsrv *MCPServer) error {
 	mux.HandleFunc("GET /ack", func(_ http.ResponseWriter, _ *http.Request) {})
 
 	mux.HandleFunc("GET /sse", cors(handleSSE(ctx, sessions, mcpsrv)))
-	mux.HandleFunc("POST /messages", cors(handleMessage(ctx, sessions)))
-	mux.HandleFunc("OPTIONS /messages", cors(handleMessage(ctx, sessions)))
+	mux.HandleFunc("POST /messages", cors(handleMessage(ctx, sessions, mcpsrv)))
+	mux.HandleFunc("OPTIONS /messages", cors(handleMessage(ctx, sessions, mcpsrv)))
 
 	srv := &http.Server{
 		Addr:    addr,
@@ -125,53 +122,7 @@ func handleSSE(_ context.Context, sessions *Sessions, srv *MCPServer) http.Handl
 					// closed channel
 					return
 				}
-
-				switch r := rreq.(type) {
-				case mcp.InitializeRequest:
-					send("message", rpc.NewResponse(mcp.InitializeResponse{
-						ProtocolVersion: mcp.Version,
-						ServerInfo: mcp.Info{
-							Name:    "lightpanda go mcp",
-							Version: "1.0.0",
-						},
-						Capabilities: mcp.Capabilities{"tools": mcp.Capability{}},
-					}, r.Request.Id))
-				case mcp.ToolsListRequest:
-					send("message", rpc.NewResponse(mcp.ToolsListResponse{
-						Tools: srv.ListTools(),
-					}, r.Id))
-				case mcp.ToolsCallRequest:
-					slog.Debug("call tool", slog.String("name", r.Params.Name), slog.Int("id", r.Id))
-					go func() {
-						res, err := srv.CallTool(ctx, mcpconn, r)
-
-						if err != nil {
-							slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
-							send("message", rpc.NewResponse(mcp.ToolsCallResponse{
-								IsError: true,
-								Content: []mcp.ToolsCallContent{{
-									Type: "text",
-									Text: err.Error(),
-								}},
-							}, r.Id))
-							return
-						}
-
-						send("message", rpc.NewResponse(mcp.ToolsCallResponse{
-							Content: []mcp.ToolsCallContent{{
-								Type: "text",
-								Text: res,
-							}},
-						}, r.Id))
-					}()
-
-				case mcp.NotificationsCancelledRequest:
-					slog.Debug("cancelled",
-						slog.Int("id", r.Params.RequestId),
-						slog.String("reason", r.Params.Reason),
-					)
-					// TODO cancel the corresponding request.
-				}
+				srv.Handle(ctx, rreq, mcpconn, send)
 			case <-req.Context().Done():
 				return
 			case <-ctx.Done():
@@ -182,7 +133,7 @@ func handleSSE(_ context.Context, sessions *Sessions, srv *MCPServer) http.Handl
 	}
 }
 
-func handleMessage(_ context.Context, sessions *Sessions) http.HandlerFunc {
+func handleMessage(_ context.Context, sessions *Sessions, srv *MCPServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// get the sessionId
 		var id SessionId
@@ -199,35 +150,17 @@ func handleMessage(_ context.Context, sessions *Sessions) http.HandlerFunc {
 			return
 		}
 
-		// decode the message
-		dec := json.NewDecoder(req.Body)
-		var rreq rpc.Request
-		if err := dec.Decode(&rreq); err != nil {
-			slog.Debug("decode", slog.Any("err", err))
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-
-		slog.Debug("message", slog.Any("id", id), slog.String("method", rreq.Method))
-
-		if err := rreq.Validate(); err != nil {
-			slog.Debug("bad jsonrpc request", slog.Any("err", err))
-			http.Error(w, "bad jsonrpc request", http.StatusBadRequest)
-			return
-		}
-
-		if err := rreq.Err(); err != nil {
-			// TODO disconnect the client?
-			slog.Error("client jsonrpc error", slog.Any("err", err), slog.Any("rreq", rreq))
-			w.WriteHeader(http.StatusAccepted)
-			w.Write([]byte("Accepted"))
-			return
-		}
-
-		mcpreq, err := mcp.Decode(rreq)
+		mcpreq, err := srv.Decode(req.Body)
 		if err != nil {
-			slog.Error("bad mcp", slog.Any("err", err), slog.Any("rreq", rreq))
-			http.Error(w, "bad mcp request", http.StatusBadRequest)
+			slog.Error("message decode error", slog.Any("err", err))
+			if errors.Is(err, ErrRPCRequest) {
+				// TODO disconnect the client?
+				w.WriteHeader(http.StatusAccepted)
+				w.Write([]byte("Accepted"))
+				return
+			}
+
+			http.Error(w, "bad request", http.StatusBadRequest)
 			return
 		}
 
