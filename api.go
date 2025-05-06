@@ -160,7 +160,7 @@ func handleMessage(_ context.Context, sessions *Sessions, srv *MCPServer) http.H
 			if errors.Is(err, ErrRPCRequest) {
 				// TODO disconnect the client?
 				w.WriteHeader(http.StatusAccepted)
-				w.Write([]byte("Accepted"))
+				w.Write([]byte("Accepted")) // nolint:errcheck
 				return
 			}
 
