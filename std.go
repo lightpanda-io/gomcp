@@ -43,7 +43,11 @@ func runstd(ctx context.Context, in io.Reader, out io.Writer, mcpsrv *MCPServer)
 					// closed channel
 					return
 				}
-				mcpsrv.Handle(ctx, rreq, mcpconn, send)
+				if err := mcpsrv.Handle(ctx, rreq, mcpconn, send); err != nil {
+					// disconnect on error
+					slog.Error("handle req", slog.Any("err", err))
+					return
+				}
 			}
 		}
 	}()

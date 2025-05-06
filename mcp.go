@@ -177,10 +177,11 @@ func (s *MCPServer) Handle(
 	rreq mcp.Request,
 	mcpconn *MCPConn,
 	send SendFn,
-) {
+) error {
+	var senderr error
 	switch r := rreq.(type) {
 	case mcp.InitializeRequest:
-		send("message", rpc.NewResponse(mcp.InitializeResponse{
+		senderr = send("message", rpc.NewResponse(mcp.InitializeResponse{
 			ProtocolVersion: mcp.Version,
 			ServerInfo: mcp.Info{
 				Name:    "lightpanda go mcp",
@@ -189,7 +190,7 @@ func (s *MCPServer) Handle(
 			Capabilities: mcp.Capabilities{"tools": mcp.Capability{}},
 		}, r.Request.Id))
 	case mcp.ToolsListRequest:
-		send("message", rpc.NewResponse(mcp.ToolsListResponse{
+		senderr = send("message", rpc.NewResponse(mcp.ToolsListResponse{
 			Tools: s.ListTools(),
 		}, r.Id))
 	case mcp.ToolsCallRequest:
@@ -199,17 +200,16 @@ func (s *MCPServer) Handle(
 
 			if err != nil {
 				slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
-				send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+				senderr = send("message", rpc.NewResponse(mcp.ToolsCallResponse{
 					IsError: true,
 					Content: []mcp.ToolsCallContent{{
 						Type: "text",
 						Text: err.Error(),
 					}},
 				}, r.Id))
-				return
 			}
 
-			send("message", rpc.NewResponse(mcp.ToolsCallResponse{
+			senderr = send("message", rpc.NewResponse(mcp.ToolsCallResponse{
 				Content: []mcp.ToolsCallContent{{
 					Type: "text",
 					Text: res,
@@ -224,4 +224,10 @@ func (s *MCPServer) Handle(
 		)
 		// TODO cancel the corresponding request.
 	}
+
+	if senderr != nil {
+		return fmt.Errorf("send message: %w", senderr)
+	}
+
+	return nil
 }
