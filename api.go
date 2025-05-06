@@ -122,7 +122,11 @@ func handleSSE(_ context.Context, sessions *Sessions, srv *MCPServer) http.Handl
 					// closed channel
 					return
 				}
-				srv.Handle(ctx, rreq, mcpconn, send)
+				if err := srv.Handle(ctx, rreq, mcpconn, send); err != nil {
+					// disconnect on error
+					slog.Error("handle req", slog.Any("err", err))
+					return
+				}
 			case <-req.Context().Done():
 				return
 			case <-ctx.Done():
@@ -156,7 +160,7 @@ func handleMessage(_ context.Context, sessions *Sessions, srv *MCPServer) http.H
 			if errors.Is(err, ErrRPCRequest) {
 				// TODO disconnect the client?
 				w.WriteHeader(http.StatusAccepted)
-				w.Write([]byte("Accepted"))
+				w.Write([]byte("Accepted")) // nolint:errcheck
 				return
 			}
 
