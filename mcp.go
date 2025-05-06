@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
+
 	"github.com/lightpanda-io/gomcp/mcp"
 	"github.com/lightpanda-io/gomcp/rpc"
 )
