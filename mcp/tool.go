@@ -30,7 +30,8 @@ type Properties map[string]Schema
 
 type schemaObject struct {
 	SchemaType
-	Properties Properties `json:"properties"`
+	Properties           Properties `json:"properties"`
+	AdditionalProperties bool       `json:"additionalProperties"`
 }
 
 func NewSchemaObject(p map[string]Schema) schemaObject {
