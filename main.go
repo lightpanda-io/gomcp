@@ -24,7 +24,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	err := run(ctx, os.Args, os.Stdout, os.Stderr)
+	err := run(ctx, os.Args, os.Stdin, os.Stdout, os.Stderr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(exitFail)
@@ -38,13 +38,14 @@ const (
 	CdpWSDefault      = "ws://127.0.0.1:9222"
 )
 
-func run(ctx context.Context, args []string, _, stderr io.Writer) error {
+func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	// declare runtime flag parameters.
 	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
 	flags.SetOutput(stderr)
 
 	var (
 		verbose = flags.Bool("verbose", false, "enable debug log level")
+		stdio   = flags.Bool("stdio", false, "enable std io conn")
 		apiaddr = flags.String("api-addr", env("MCP_API_ADDRESS", ApiDefaultAddress), "http api server address")
 		cdpws   = flags.String("cdp", env("MCP_CDP", CdpWSDefault), "cdp ws to connect")
 	)
@@ -80,6 +81,10 @@ func run(ctx context.Context, args []string, _, stderr io.Writer) error {
 	defer cancel()
 
 	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
+
+	if *stdio {
+		return runstd(ctx, stdin, stdout, mcpsrv)
+	}
 
 	return runapi(ctx, *apiaddr, mcpsrv)
 }
