@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"strings"
 
+	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 
@@ -78,6 +79,27 @@ func (c *MCPConn) GetHTML() (string, error) {
 	return content, nil
 }
 
+// Return the document's content in Markdown format.
+func (c *MCPConn) GetMarkdown() (string, error) {
+	if c.cdpctx == nil {
+		return "", errors.New("no browser connection, try to use goto first")
+	}
+
+	var html string
+	err := chromedp.Run(c.cdpctx, chromedp.OuterHTML("html", &html))
+	if err != nil {
+		return "", fmt.Errorf("outerHTML: %w", err)
+	}
+
+	converter := md.NewConverter("", true, nil)
+	content, err := converter.ConvertString(html)
+	if err != nil {
+		return "", fmt.Errorf("convert to markdown: %w", err)
+	}
+
+	return content, nil
+}
+
 // Return all links from a page
 func (c *MCPConn) GetLinks() ([]string, error) {
 	if c.cdpctx == nil {
@@ -132,13 +154,20 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 			}),
 		},
 		{
-			Name:        "html",
-			Description: "Get the full HTML of the opened page",
+			Name: "html",
+			Description: "Get the fll HTML of the opened page." +
+				" Consider using markdown format first since HTML can be too" +
+				" long for the context.",
+			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
+		},
+		{
+			Name:        "markdown",
+			Description: "Get the page content in markdown format.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
 		{
 			Name:        "links",
-			Description: "list all links visibles in the opened page",
+			Description: "List all links in the opened page",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
 	}
@@ -165,6 +194,8 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 		return conn.Goto(args.URL)
 	case "html":
 		return conn.GetHTML()
+	case "markdown":
+		return conn.GetMarkdown()
 	case "links":
 		links, err := conn.GetLinks()
 		if err != nil {
