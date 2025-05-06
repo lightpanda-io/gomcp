@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for lightpanda-gomcp on 2025-05-06T15:23:43+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'lightpanda-gomcp'
+primary_region = 'fra'
+
+[build]
+  [build.args]
+    GO_VERSION = '1.24.2'
+
+[env]
+  PORT = '8080'
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
