@@ -59,7 +59,7 @@ server **and restart Claude Desktop**.
   "mcpServers": {
     "lightpanda": {
       "command": "/path/to/gomcp",
-      "args": ["-stdio"]
+      "args": ["stdio"]
     }
   }
 }
@@ -75,7 +75,7 @@ You can start `gomcp` as a
 [stdio](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio).
 
 ```
-$ ./gomcp -stdio
+$ ./gomcp stdio
 ```
 
 ### Server-Sent Events (SSE)
@@ -86,7 +86,7 @@ You can start `gomcp` as a
 By default, the server will listen HTTP connection on `127.0.0.1:8081`
 
 ```
-$ ./gomcp
+$ ./gomcp sse
 2025/05/06 14:37:13 INFO server listening addr=127.0.0.1:8081
 ```
 

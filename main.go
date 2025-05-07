@@ -59,7 +59,6 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 
 	var (
 		verbose = flags.Bool("verbose", false, "enable debug log level")
-		stdio   = flags.Bool("stdio", false, "enable std io conn")
 		apiaddr = flags.String("api-addr", env("MCP_API_ADDRESS", ApiDefaultAddress), "http api server address")
 		cdpws   = flags.String("cdp", env("MCP_CDP", CdpWSDefault), "cdp ws to connect")
 	)
@@ -67,7 +66,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	// usage func declaration.
 	exec := args[0]
 	flags.Usage = func() {
-		fmt.Fprintf(stderr, "usage: %s\n", exec)
+		fmt.Fprintf(stderr, "usage: %s sse|stdio|download\n", exec)
 		fmt.Fprintf(stderr, "Demo MCP server.\n")
 		fmt.Fprintf(stderr, "\nCommand line options:\n")
 		flags.PrintDefaults()
@@ -80,7 +79,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	}
 
 	args = flags.Args()
-	if len(args) != 0 {
+	if len(args) != 1 {
 		flags.Usage()
 		return errors.New("bad arguments")
 	}
@@ -96,11 +95,15 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 
 	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
 
-	if *stdio {
+	switch args[0] {
+	case "stdio":
 		return runstd(ctx, stdin, stdout, mcpsrv)
+	case "sse":
+		return runapi(ctx, *apiaddr, mcpsrv)
 	}
 
-	return runapi(ctx, *apiaddr, mcpsrv)
+	flags.Usage()
+	return errors.New("bad command")
 }
 
 // env returns the env value corresponding to the key or the default string.
