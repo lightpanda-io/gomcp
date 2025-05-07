@@ -59,7 +59,6 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 
 	var (
 		verbose = flags.Bool("verbose", false, "enable debug log level")
-		stdio   = flags.Bool("stdio", false, "enable std io conn")
 		apiaddr = flags.String("api-addr", env("MCP_API_ADDRESS", ApiDefaultAddress), "http api server address")
 		cdpws   = flags.String("cdp", env("MCP_CDP", CdpWSDefault), "cdp ws to connect")
 	)
@@ -67,20 +66,25 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	// usage func declaration.
 	exec := args[0]
 	flags.Usage = func() {
-		fmt.Fprintf(stderr, "usage: %s\n", exec)
+		fmt.Fprintf(stderr, "usage: %s sse|stdio|download|cleanup\n", exec)
 		fmt.Fprintf(stderr, "Demo MCP server.\n")
+		fmt.Fprintf(stderr, "\nCommands:\n")
+		fmt.Fprintf(stderr, "\tstdio\t\tstarts the stdio server\n")
+		fmt.Fprintf(stderr, "\tsse\t\tstarts the HTTP SSE MCP server\n")
+		fmt.Fprintf(stderr, "\tdownload\tinstalls or updates the Lightpanda browser\n")
+		fmt.Fprintf(stderr, "\tcleanup\tremoves the Lightpanda browser\n")
 		fmt.Fprintf(stderr, "\nCommand line options:\n")
 		flags.PrintDefaults()
 		fmt.Fprintf(stderr, "\nEnvironment vars:\n")
 		fmt.Fprintf(stderr, "\tMCP_API_ADDRESS\t\tdefault %s\n", ApiDefaultAddress)
-		fmt.Fprintf(stderr, "\tMCP_CDP\tdefault %s\n", CdpWSDefault)
+		fmt.Fprintf(stderr, "\tMCP_CDP\t\t\tdefault %s\n", CdpWSDefault)
 	}
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
 
 	args = flags.Args()
-	if len(args) != 0 {
+	if len(args) != 1 {
 		flags.Usage()
 		return errors.New("bad arguments")
 	}
@@ -96,11 +100,19 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 
 	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
 
-	if *stdio {
+	switch args[0] {
+	case "cleanup":
+		return cleanup(ctx)
+	case "download":
+		return download(ctx)
+	case "stdio":
 		return runstd(ctx, stdin, stdout, mcpsrv)
+	case "sse":
+		return runapi(ctx, *apiaddr, mcpsrv)
 	}
 
-	return runapi(ctx, *apiaddr, mcpsrv)
+	flags.Usage()
+	return errors.New("bad command")
 }
 
 // env returns the env value corresponding to the key or the default string.
