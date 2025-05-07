@@ -101,8 +101,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 
 	switch args[0] {
 	case "download":
-		// TODO download the lightpanda browser.
-		return nil
+		return download(ctx)
 	case "stdio":
 		return runstd(ctx, stdin, stdout, mcpsrv)
 	case "sse":
