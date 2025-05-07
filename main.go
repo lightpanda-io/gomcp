@@ -68,11 +68,15 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	flags.Usage = func() {
 		fmt.Fprintf(stderr, "usage: %s sse|stdio|download\n", exec)
 		fmt.Fprintf(stderr, "Demo MCP server.\n")
+		fmt.Fprintf(stderr, "\nCommands:\n")
+		fmt.Fprintf(stderr, "\tstdio\t\tstarts the stdio server\n")
+		fmt.Fprintf(stderr, "\tsse\t\tstarts the HTTP SSE MCP server\n")
+		fmt.Fprintf(stderr, "\tdownload\tinstalls or updates the Lightpanda browser\n")
 		fmt.Fprintf(stderr, "\nCommand line options:\n")
 		flags.PrintDefaults()
 		fmt.Fprintf(stderr, "\nEnvironment vars:\n")
 		fmt.Fprintf(stderr, "\tMCP_API_ADDRESS\t\tdefault %s\n", ApiDefaultAddress)
-		fmt.Fprintf(stderr, "\tMCP_CDP\tdefault %s\n", CdpWSDefault)
+		fmt.Fprintf(stderr, "\tMCP_CDP\t\t\tdefault %s\n", CdpWSDefault)
 	}
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
@@ -96,6 +100,9 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
 
 	switch args[0] {
+	case "download":
+		// TODO download the lightpanda browser.
+		return nil
 	case "stdio":
 		return runstd(ctx, stdin, stdout, mcpsrv)
 	case "sse":
