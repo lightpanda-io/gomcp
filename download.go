@@ -12,6 +12,23 @@ import (
 	"runtime"
 )
 
+func cleanup(_ context.Context) error {
+	// get the dir
+	dir, err := configdir()
+	if err != nil {
+		return fmt.Errorf("get config dir: %w", err)
+	}
+	bin := binfilename(dir)
+
+	slog.Debug("remove lightpanda browser", slog.String("name", bin))
+
+	if err := os.Remove(bin); err != nil {
+		return fmt.Errorf("remove browser: %w", err)
+	}
+
+	return nil
+}
+
 func download(ctx context.Context) error {
 	url, err := nightlyURL()
 	if err != nil {
@@ -50,6 +67,8 @@ func download(ctx context.Context) error {
 	cli := http.Client{}
 	defer cli.CloseIdleConnections()
 
+	slog.Info("start lightpanda browser download")
+
 	resp, err := cli.Do(req)
 	if err != nil {
 		return fmt.Errorf("do req: %w", err)
@@ -64,7 +83,7 @@ func download(ctx context.Context) error {
 		return fmt.Errorf("copy file: %w", err)
 	}
 
-	slog.Debug("lightpanda broswer downloaded", slog.String("name", bin))
+	slog.Debug("lightpanda browser downloaded", slog.String("name", bin))
 
 	return nil
 }

@@ -66,12 +66,13 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	// usage func declaration.
 	exec := args[0]
 	flags.Usage = func() {
-		fmt.Fprintf(stderr, "usage: %s sse|stdio|download\n", exec)
+		fmt.Fprintf(stderr, "usage: %s sse|stdio|download|cleanup\n", exec)
 		fmt.Fprintf(stderr, "Demo MCP server.\n")
 		fmt.Fprintf(stderr, "\nCommands:\n")
 		fmt.Fprintf(stderr, "\tstdio\t\tstarts the stdio server\n")
 		fmt.Fprintf(stderr, "\tsse\t\tstarts the HTTP SSE MCP server\n")
 		fmt.Fprintf(stderr, "\tdownload\tinstalls or updates the Lightpanda browser\n")
+		fmt.Fprintf(stderr, "\tcleanup\tremoves the Lightpanda browser\n")
 		fmt.Fprintf(stderr, "\nCommand line options:\n")
 		flags.PrintDefaults()
 		fmt.Fprintf(stderr, "\nEnvironment vars:\n")
@@ -100,6 +101,8 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
 
 	switch args[0] {
+	case "cleanup":
+		return cleanup(ctx)
 	case "download":
 		return download(ctx)
 	case "stdio":
