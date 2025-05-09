@@ -1,6 +1,6 @@
 # Lightpanda Go MCP server
 
-`gomcp` is a [MCP server](https://modelcontextprotocol.io) written in
+`gomcp` is an [MCP server](https://modelcontextprotocol.io) written in
 [Go](https://go.dev/).
 
 It exposes tools to interact with [Lightpanda Browser](https://lightpanda.io/)
