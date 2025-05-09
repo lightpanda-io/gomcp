@@ -27,20 +27,22 @@ Once you cloned the repository, build the binary with `go build`.
 
 ## Usage
 
-:warning: `gomcp` requires you first start Lightpanda Browser manually.
+By default, `gocmp` starts a local instance of Lightpanda browser.
 
-We recommand to change the default timeout to a longer value, like 180 seconds.
-Indeed, interactions with a LLM can takes time reasonning and the default
-timeout will drop the connection to early.
-
+On the first run, you need to download the binary with the command:
 ```
-$ lightpanda --timeout 180
+$ gomcp download
 ```
+The browser is stored in the user config directory.
+`$XDG_CONFIG_HOME/lightpanda-gomcp` or `HOME/.config/lightpanda-gomcp` on
+Linux, `$HOME/Library/Application Support/lightpanda-gomcp` on Macosx.
 
-By defaut Lightpanda listen on `127.0.0.1:9222`. You can configure the port
-number with the `--port` option.
-In this case, use the `--cdp` option of `gocmp` to configure the browser's
-address accordingly.
+You can remove the downloaded binary with `gomcp cleanup` command.
+
+You can connect on a remote browser with the option `--cdp`.
+```
+$ gomcp -cdp ws://127.0.0.1:9222 stdio
+```
 
 ###  Configure Claude Desktop
 

@@ -1,3 +1,17 @@
+// Copyright 2025 Lightpanda (Selecy SAS)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -8,6 +22,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 )
@@ -130,4 +145,31 @@ func configdir() (string, error) {
 	}
 
 	return filepath.Join(dir, "lightpanda-gomcp"), nil
+}
+
+var ErrNoBrowser = errors.New("no browser")
+
+// runbrowser returns a command to run the local browser.
+func newbrowser(ctx context.Context) (*exec.Cmd, error) {
+	// get the dir
+	dir, err := configdir()
+	if err != nil {
+		return nil, fmt.Errorf("get config dir: %w", err)
+	}
+	bin := binfilename(dir)
+
+	// ensure the file exists
+	_, err = os.Stat(bin)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, ErrNoBrowser
+	}
+	if err != nil {
+		return nil, fmt.Errorf("browser bin: %w", err)
+	}
+
+	cmd := exec.CommandContext(ctx, bin, "--port", "9222", "--timeout", "180")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd, nil
 }
