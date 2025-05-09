@@ -16,14 +16,14 @@ flowchart LR;
 
 ### Requirements
 
-`gomcp` expects you installed [Lightpanda
+`gomcp` requires you to have already installed [Lightpanda
 Browser](https://lightpanda.io/docs/getting-started/installation).
 
-### Build from sources
+### Build from source
 
 You need to install [Go](https://go.dev/doc/install) to build from source.
 
-Once you cloned the repository, build the binary with `go build`.
+Once you have cloned the repository, build the binary with `go build`.
 
 ## Usage
 
@@ -51,9 +51,9 @@ Desktop](https://claude.ai/download).
 
 Claude Desktop uses the
 [stdio](https://modelcontextprotocol.io/docs/concepts/transports#standard-input%2Foutput-stdio)
-transport to connect to a MCP server.
+transport to connect to an MCP server.
 
-Edit the `claude_desktop_config.json` configuration file and add `gomcp` as mcp
+Edit the `claude_desktop_config.json` configuration file and add `gomcp` as the mcp
 server **and restart Claude Desktop**.
 
 ```json
@@ -85,7 +85,7 @@ $ ./gomcp stdio
 You can start `gomcp` as a
 [SSE](https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse).
 
-By default, the server will listen HTTP connection on `127.0.0.1:8081`
+By default, the server listens to the HTTP connection at `127.0.0.1:8081`.
 
 ```
 $ ./gomcp sse
