@@ -1,4 +1,4 @@
-name: nightly build
+name: release build
 
 on:
   push:
@@ -32,4 +32,5 @@ jobs:
       - name: Upload the build
         uses: ncipollo/release-action@v1
         with:
+          allowUpdates: true
           artifacts: gomcp-${{ matrix.os }}-${{ matrix.arch }}
