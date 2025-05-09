@@ -12,4 +12,4 @@ FROM debian:bookworm
 RUN apt-get update && apt-get -y install ca-certificates
 
 COPY --from=builder /gomcp /usr/local/bin/
-CMD ["gomcp", "sse", "-api-addr", "0.0.0.0:8081"]
+CMD ["gomcp", "-api-addr", "0.0.0.0:8081", "sse"]
