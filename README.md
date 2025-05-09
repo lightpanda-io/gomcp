@@ -27,20 +27,22 @@ Once you cloned the repository, build the binary with `go build`.
 
 ## Usage
 
-:warning: `gomcp` requires you first start Lightpanda Browser manually.
+By default, `gocmp` starts a local instance of Lightpanda browser.
 
-We recommand to change the default timeout to a longer value, like 180 seconds.
-Indeed, interactions with a LLM can takes time reasonning and the default
-timeout will drop the connection to early.
-
+On the first run, you need to download the binary with the command:
 ```
-$ lightpanda --timeout 180
+$ gomcp download
 ```
+The browser is stored in the user config directory.
+`$XDG_CONFIG_HOME/lightpanda-gomcp` or `HOME/.config/lightpanda-gomcp` on
+Linux, `$HOME/Library/Application Support/lightpanda-gomcp` on Macosx.
 
-By defaut Lightpanda listen on `127.0.0.1:9222`. You can configure the port
-number with the `--port` option.
-In this case, use the `--cdp` option of `gocmp` to configure the browser's
-address accordingly.
+You can remove the downloaded binary with `gomcp cleanup` command.
+
+You can connect on a remote browser with the option `--cdp`.
+```
+$ gomcp -cdp ws://127.0.0.1:9222 stdio
+```
 
 ###  Configure Claude Desktop
 
@@ -89,52 +91,6 @@ By default, the server will listen HTTP connection on `127.0.0.1:8081`
 $ ./gomcp sse
 2025/05/06 14:37:13 INFO server listening addr=127.0.0.1:8081
 ```
-
-## Deployment
-
-We use [Fly.io](https://fly.io) to deploy the app.
-Prod is available via [telemetry.lightpanda.io](https://telemetry.lightpanda.io).
-
-### Requirements
-
-You need to install [flyctl](https://fly.io/docs/flyctl/install/) and join the
-Lightpanda's team.
-
-### Deploy
-
-The deployment is done automatically on merge via [GH
-action](https://github.com/lightpanda-io/telemetry/actions/workflows/fly-deploy.yml).
-But you can deplpoy manually either.
-
-```
-$ make deploy
-```
-
-### Secrets
-
-Update secrets on applications.
-You need [1password cli](https://developer.1password.com/docs/cli/) and access to the `browser` vault.
-
-```
-$ make secrets
-```
-
-### Scale
-
-Update the number of machines running the application.
-
-```
-$ fly scale count 2
-```
-
-### Logs
-
-Read the application's logs.
-
-```
-$ fly logs
-```
-
 ## Thanks
 
 `gomcp` is built thanks of open source projects, in particular:

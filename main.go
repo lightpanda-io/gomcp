@@ -49,7 +49,6 @@ func main() {
 
 const (
 	ApiDefaultAddress = "127.0.0.1:8081"
-	CdpWSDefault      = "ws://127.0.0.1:9222"
 )
 
 func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
@@ -60,7 +59,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	var (
 		verbose = flags.Bool("verbose", false, "enable debug log level")
 		apiaddr = flags.String("api-addr", env("MCP_API_ADDRESS", ApiDefaultAddress), "http api server address")
-		cdpws   = flags.String("cdp", env("MCP_CDP", CdpWSDefault), "cdp ws to connect")
+		cdp     = flags.String("cdp", os.Getenv("MCP_CDP"), "cdp ws to connect. By default gomcp will run the download Lightpanda browser.")
 	)
 
 	// usage func declaration.
@@ -77,7 +76,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		flags.PrintDefaults()
 		fmt.Fprintf(stderr, "\nEnvironment vars:\n")
 		fmt.Fprintf(stderr, "\tMCP_API_ADDRESS\t\tdefault %s\n", ApiDefaultAddress)
-		fmt.Fprintf(stderr, "\tMCP_CDP\t\t\tdefault %s\n", CdpWSDefault)
+		fmt.Fprintf(stderr, "\tMCP_CDP\n")
 	}
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
@@ -93,18 +92,46 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
+	// commands w/o browser.
+	switch args[0] {
+	case "cleanup":
+		return cleanup(ctx)
+	case "download":
+		return download(ctx)
+	}
+
+	// commands with browser.
+
+	cdpws := "ws://127.0.0.1:9222"
+	if *cdp == "" {
+		// Start the local browser.
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		browser, err := newbrowser(ctx)
+		if err != nil {
+			if errors.Is(err, ErrNoBrowser) {
+				return errors.New("browser not found. Please run gocmp download first.")
+			}
+			return fmt.Errorf("new browser: %w", err)
+		}
+		go func() {
+			if err := browser.Run(); err != nil {
+				slog.Error("run browser", slog.Any("err", err))
+			}
+		}()
+	} else {
+		cdpws = *cdp
+	}
+
 	cdpctx, cancel := chromedp.NewRemoteAllocator(ctx,
-		*cdpws, chromedp.NoModifyURL,
+		cdpws, chromedp.NoModifyURL,
 	)
 	defer cancel()
 
 	mcpsrv := NewMCPServer("lightpanda go mcp", "1.0.0", cdpctx)
 
 	switch args[0] {
-	case "cleanup":
-		return cleanup(ctx)
-	case "download":
-		return download(ctx)
 	case "stdio":
 		return runstd(ctx, stdin, stdout, mcpsrv)
 	case "sse":
