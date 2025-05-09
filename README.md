@@ -91,52 +91,6 @@ By default, the server will listen HTTP connection on `127.0.0.1:8081`
 $ ./gomcp sse
 2025/05/06 14:37:13 INFO server listening addr=127.0.0.1:8081
 ```
-
-## Deployment
-
-We use [Fly.io](https://fly.io) to deploy the app.
-Prod is available via [telemetry.lightpanda.io](https://telemetry.lightpanda.io).
-
-### Requirements
-
-You need to install [flyctl](https://fly.io/docs/flyctl/install/) and join the
-Lightpanda's team.
-
-### Deploy
-
-The deployment is done automatically on merge via [GH
-action](https://github.com/lightpanda-io/telemetry/actions/workflows/fly-deploy.yml).
-But you can deplpoy manually either.
-
-```
-$ make deploy
-```
-
-### Secrets
-
-Update secrets on applications.
-You need [1password cli](https://developer.1password.com/docs/cli/) and access to the `browser` vault.
-
-```
-$ make secrets
-```
-
-### Scale
-
-Update the number of machines running the application.
-
-```
-$ fly scale count 2
-```
-
-### Logs
-
-Read the application's logs.
-
-```
-$ fly logs
-```
-
 ## Thanks
 
 `gomcp` is built thanks of open source projects, in particular:
