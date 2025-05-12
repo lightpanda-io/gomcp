@@ -101,7 +101,6 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	}
 
 	// commands with browser.
-
 	cdpws := "ws://127.0.0.1:9222"
 	if *cdp == "" {
 		// Start the local browser.
@@ -115,11 +114,26 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 			}
 			return fmt.Errorf("new browser: %w", err)
 		}
+
+		// Ensure we wait until the browser stops.
+		done := make(chan struct{})
+		defer func() {
+			// wait until the browser stops.
+			<-done
+		}()
+
+		// Start the browser process.
 		go func() {
 			if err := browser.Run(); err != nil {
 				slog.Error("run browser", slog.Any("err", err))
 			}
+			// The browser is ended, notify to stop waiting.
+			close(done)
 		}()
+
+		// Ensure the context is cancelled before waiting the browser end.
+		// It will stops the process.
+		defer cancel()
 	} else {
 		cdpws = *cdp
 	}
