@@ -45,6 +45,10 @@ func Decode(r rpc.Request) (Request, error) {
 		}
 
 		return rr, nil
+	case ResourcesListMethod:
+		return ResourcesListRequest(r), nil
+	case PromptsListMethod:
+		return PromptsListRequest(r), nil
 	case ToolsListMethod:
 		return ToolsListRequest(r), nil
 	case ToolsCallMethod:
@@ -97,6 +101,14 @@ type NotificationsCancelledRequest struct {
 		Reason    string `json:"reason"`
 	}
 }
+
+const ResourcesListMethod = "resources/list"
+
+type ResourcesListRequest rpc.Request
+
+const PromptsListMethod = "prompts/list"
+
+type PromptsListRequest rpc.Request
 
 const ToolsListMethod = "tools/list"
 

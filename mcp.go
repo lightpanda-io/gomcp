@@ -246,6 +246,10 @@ func (s *MCPServer) Handle(
 			},
 			Capabilities: mcp.Capabilities{"tools": mcp.Capability{}},
 		}, r.Request.Id))
+	case mcp.PromptsListRequest:
+		senderr = send("message", rpc.NewResponse(struct{}{}, r.Id))
+	case mcp.ResourcesListRequest:
+		senderr = send("message", rpc.NewResponse(struct{}{}, r.Id))
 	case mcp.ToolsListRequest:
 		senderr = send("message", rpc.NewResponse(mcp.ToolsListResponse{
 			Tools: s.ListTools(),
