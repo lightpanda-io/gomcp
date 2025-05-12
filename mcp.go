@@ -78,21 +78,6 @@ func (c *MCPConn) Goto(url string) (string, error) {
 	return fmt.Sprintf("navigation to %s done", url), nil
 }
 
-// Return the document's HTML
-func (c *MCPConn) GetHTML() (string, error) {
-	if c.cdpctx == nil {
-		return "", errors.New("no browser connection, try to use goto first")
-	}
-
-	var content string
-	err := chromedp.Run(c.cdpctx, chromedp.OuterHTML("html", &content))
-	if err != nil {
-		return "", fmt.Errorf("outerHTML: %w", err)
-	}
-
-	return content, nil
-}
-
 // Return the document's content in Markdown format.
 func (c *MCPConn) GetMarkdown() (string, error) {
 	if c.cdpctx == nil {
@@ -168,13 +153,6 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 			}),
 		},
 		{
-			Name: "html",
-			Description: "Get the fll HTML of the opened page." +
-				" Consider using markdown format first since HTML can be too" +
-				" long for the context.",
-			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
-		},
-		{
 			Name:        "markdown",
 			Description: "Get the page content in markdown format.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
@@ -206,8 +184,6 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", errors.New("no url")
 		}
 		return conn.Goto(args.URL)
-	case "html":
-		return conn.GetHTML()
 	case "markdown":
 		return conn.GetMarkdown()
 	case "links":
