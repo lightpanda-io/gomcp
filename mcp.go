@@ -214,6 +214,8 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 		}
 
 		return args.Text, nil
+	case "over":
+		return "The task is over.", nil
 	}
 
 	// no tool found
