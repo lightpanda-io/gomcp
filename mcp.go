@@ -174,6 +174,11 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 			Description: "Used to indicate that the task is over.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
+		{
+			Name:        "user_input",
+			Description: "Waits for the user to give further instructions.",
+			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
+		},
 	}
 }
 
@@ -216,6 +221,8 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 		return args.Text, nil
 	case "over":
 		return "The task is over.", nil
+	case "user_input":
+		return "Waiting for user input.", nil
 	}
 
 	// no tool found
