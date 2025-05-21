@@ -75,7 +75,7 @@ func (c *MCPConn) Goto(url string) (string, error) {
 		return "", fmt.Errorf("navigate %s: %w", url, err)
 	}
 
-	return fmt.Sprintf("navigation to %s done", url), nil
+	return fmt.Sprintf("The browser correctly navigated to %s, the page is loaded in the context of the browser and can be used.", url), nil
 }
 
 // Return the document's content in Markdown format.
