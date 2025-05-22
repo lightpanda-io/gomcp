@@ -147,9 +147,16 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		{
 			Name: "goto",
 			Description: "Navigate to a specified URL and load the page in" +
-				"memory so it can be reused later for info extraction",
+				"memory so it can be reused later for info extraction.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
 				"url": mcp.NewSchemaString(),
+			}),
+		},
+		{
+			Name:        "search",
+			Description: "Search for results on DuckDuckGo and store the page in memory.",
+			InputSchema: mcp.NewSchemaObject(mcp.Properties{
+				"text": mcp.NewSchemaString(),
 			}),
 		},
 		{
@@ -196,6 +203,20 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", errors.New("no url")
 		}
 		return conn.Goto(args.URL)
+	case "search":
+		var args struct {
+			Text string `json:"text"`
+		}
+
+		if err := json.Unmarshal(v, &args); err != nil {
+			return "", fmt.Errorf("args decode: %w", err)
+		}
+
+		if args.Text == "" {
+			return "", errors.New("no text")
+		}
+
+		return conn.Goto("https://duckduckgo.com/?q=" + strings.Replace(args.Text, " ", "+", -1))
 	case "markdown":
 		return conn.GetMarkdown()
 	case "links":
