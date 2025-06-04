@@ -147,9 +147,16 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		{
 			Name: "goto",
 			Description: "Navigate to a specified URL and load the page in" +
-				"memory so it can be reused later for info extraction",
+				"memory so it can be reused later for info extraction.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
 				"url": mcp.NewSchemaString(),
+			}),
+		},
+		{
+			Name:        "search",
+			Description: "Use a search engine to look for specific words, terms, sentences.",
+			InputSchema: mcp.NewSchemaObject(mcp.Properties{
+				"text": mcp.NewSchemaString(),
 			}),
 		},
 		{
@@ -159,19 +166,12 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		},
 		{
 			Name:        "links",
-			Description: "List all links in the opened page",
+			Description: "Extract all links in the opened page",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
 		{
-			Name:        "echo",
-			Description: "Display the text passed as argument in the client.",
-			InputSchema: mcp.NewSchemaObject(mcp.Properties{
-				"text": mcp.NewSchemaString(),
-			}),
-		},
-		{
 			Name:        "over",
-			Description: "Used to indicate that the task is over.",
+			Description: "Used to indicate that the task is over and give the final answer if there is any.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
 	}
@@ -196,6 +196,20 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", errors.New("no url")
 		}
 		return conn.Goto(args.URL)
+	case "search":
+		var args struct {
+			Text string `json:"text"`
+		}
+
+		if err := json.Unmarshal(v, &args); err != nil {
+			return "", fmt.Errorf("args decode: %w", err)
+		}
+
+		if args.Text == "" {
+			return "", errors.New("no text")
+		}
+
+		return conn.Goto("https://bing.com/search?q=" + strings.Replace(args.Text, " ", "+", -1))
 	case "markdown":
 		return conn.GetMarkdown()
 	case "links":
