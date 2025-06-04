@@ -154,7 +154,7 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		},
 		{
 			Name:        "search",
-			Description: "Search for results on DuckDuckGo and store the page in memory.",
+			Description: "Use a search engine to look for specific words, terms, sentences.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
 				"text": mcp.NewSchemaString(),
 			}),
@@ -166,19 +166,12 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		},
 		{
 			Name:        "links",
-			Description: "List all links in the opened page",
+			Description: "Extract all links in the opened page",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
 		{
-			Name:        "echo",
-			Description: "Display the text passed as argument in the client.",
-			InputSchema: mcp.NewSchemaObject(mcp.Properties{
-				"text": mcp.NewSchemaString(),
-			}),
-		},
-		{
 			Name:        "over",
-			Description: "Used to indicate that the task is over.",
+			Description: "Used to indicate that the task is over and give the final answer if there is any.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
 		},
 	}
