@@ -17,13 +17,14 @@ package mcp
 type Schema any
 
 type SchemaType struct {
-	Type string `json:"type"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
 }
 
 type schemaString SchemaType
 
-func NewSchemaString() schemaString {
-	return schemaString(SchemaType{Type: "string"})
+func NewSchemaString(description string) schemaString {
+	return schemaString(SchemaType{Type: "string", Description: description})
 }
 
 type Properties map[string]Schema
