@@ -150,14 +150,14 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 			Description: "Navigate to a specified URL and load the page in" +
 				"memory so it can be reused later for info extraction.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
-				"url": mcp.NewSchemaString(),
+				"url": mcp.NewSchemaString("The URL to navigate to, must be a valid URL."),
 			}),
 		},
 		{
 			Name:        "search",
 			Description: "Use a search engine to look for specific words, terms, sentences.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
-				"text": mcp.NewSchemaString(),
+				"text": mcp.NewSchemaString("The text to search for, must be a valid search query."),
 			}),
 		},
 		{
@@ -172,9 +172,9 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		},
 		{
 			Name:        "over",
-			Description: "Used to indicate that the task is over and give the final answer if there is any.",
+			Description: "Used to indicate that the task is over and give the final answer if there is any. This is the last tool to be called in a task.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
-				"result": mcp.NewSchemaString(),
+				"result": mcp.NewSchemaString("The final result of the task."),
 			}),
 		},
 	}
