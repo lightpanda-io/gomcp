@@ -65,6 +65,7 @@ func (c *MCPConn) connect() error {
 
 // Navigate to a specified URL
 func (c *MCPConn) Goto(url string) (string, error) {
+	fmt.Printf("Goto: %s\n", url)
 
 	if err := c.connect(); err != nil {
 		return "", fmt.Errorf("browser connect: %w", err)
@@ -172,7 +173,9 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		{
 			Name:        "over",
 			Description: "Used to indicate that the task is over and give the final answer if there is any.",
-			InputSchema: mcp.NewSchemaObject(mcp.Properties{}),
+			InputSchema: mcp.NewSchemaObject(mcp.Properties{
+				"result": mcp.NewSchemaString(),
+			}),
 		},
 	}
 }
@@ -218,9 +221,9 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", err
 		}
 		return strings.Join(links, "\n"), nil
-	case "echo":
+	case "over":
 		var args struct {
-			Text string `json:"text"`
+			Text string `json:"result"`
 		}
 
 		if err := json.Unmarshal(v, &args); err != nil {
@@ -228,8 +231,6 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 		}
 
 		return args.Text, nil
-	case "over":
-		return "The task is over.", nil
 	}
 
 	// no tool found
