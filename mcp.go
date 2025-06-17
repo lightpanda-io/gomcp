@@ -212,7 +212,7 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", errors.New("no text")
 		}
 
-		return conn.Goto("https://bing.com/search?q=" + strings.Replace(args.Text, " ", "+", -1))
+		return conn.Goto("https://duckduckgo.com/?q=" + strings.Replace(args.Text, " ", "+", -1))
 	case "markdown":
 		return conn.GetMarkdown()
 	case "links":
