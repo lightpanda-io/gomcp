@@ -1,0 +1,23 @@
+# fly.toml app configuration file generated for lightpanda-gomcp-staging on 2025-06-20T09:30:32-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'lightpanda-gomcp-staging'
+primary_region = 'fra'
+
+[build]
+
+[env]
+  PORT = '8080'
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
