@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
@@ -155,7 +156,7 @@ func (s *MCPServer) ListTools() []mcp.Tool {
 		},
 		{
 			Name:        "search",
-			Description: "Use a search engine to look for specific words, terms, sentences.",
+			Description: "Use a search engine to look for specific words, terms, sentences. The search page will then be loaded in memory.",
 			InputSchema: mcp.NewSchemaObject(mcp.Properties{
 				"text": mcp.NewSchemaString("The text to search for, must be a valid search query."),
 			}),
@@ -212,7 +213,11 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", errors.New("no text")
 		}
 
-		return conn.Goto("https://duckduckgo.com/?q=" + strings.Replace(args.Text, " ", "+", -1))
+		var escapedSearch = strings.Replace(args.Text, " ", "+", -1)
+		escapedSearch = url.QueryEscape(escapedSearch)
+		var urlString = "https://duckduckgo.com/?q=" + escapedSearch
+
+		return conn.Goto(urlString)
 	case "markdown":
 		return conn.GetMarkdown()
 	case "links":
