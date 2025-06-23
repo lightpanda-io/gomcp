@@ -213,9 +213,7 @@ func (s *MCPServer) CallTool(ctx context.Context, conn *MCPConn, req mcp.ToolsCa
 			return "", errors.New("no text")
 		}
 
-		var escapedSearch = strings.Replace(args.Text, " ", "+", -1)
-		escapedSearch = url.QueryEscape(escapedSearch)
-		var urlString = "https://duckduckgo.com/?q=" + escapedSearch
+		var urlString = "https://duckduckgo.com/?q=" + url.QueryEscape(args.Text)
 
 		return conn.Goto(urlString)
 	case "markdown":
