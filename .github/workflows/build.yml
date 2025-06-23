@@ -13,11 +13,6 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [linux, darwin]
-        arch: [amd64, arm64]
-
     runs-on: ubuntu-22.04
 
     steps:
@@ -25,12 +20,36 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Building
+      - name: Building ${{ env.os }} ${{ env.arch }}
+        env:
+          os: linux
+          arch: amd64
         run:
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=0 go build -o gomcp-${{ matrix.os }}-${{ matrix.arch }}
+          GOOS=${{ env.os }} GOARCH=${{ env.arch }} CGO_ENABLED=0 go build -o gomcp-${{ env.os }}-${{ env.arch }}
+
+      - name: Building ${{ env.os }} ${{ env.arch }}
+        env:
+          os: linux
+          arch: arm64
+        run:
+          GOOS=${{ env.os }} GOARCH=${{ env.arch }} CGO_ENABLED=0 go build -o gomcp-${{ env.os }}-${{ env.arch }}
+
+      - name: Building ${{ env.os }} ${{ env.arch }}
+        env:
+          os: darwin
+          arch: amd64
+        run:
+          GOOS=${{ env.os }} GOARCH=${{ env.arch }} CGO_ENABLED=0 go build -o gomcp-${{ env.os }}-${{ env.arch }}
+
+      - name: Building ${{ env.os }} ${{ env.arch }}
+        env:
+          os: darwin
+          arch: arm64
+        run:
+          GOOS=${{ env.os }} GOARCH=${{ env.arch }} CGO_ENABLED=0 go build -o gomcp-${{ env.os }}-${{ env.arch }}
 
       - name: Upload the build
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: gomcp-${{ matrix.os }}-${{ matrix.arch }}
+          artifacts: gomcp-linux-amd64,gomcp-linux-arm64,gomcp-darwin-amd64,gomcp-darwin-arm64
