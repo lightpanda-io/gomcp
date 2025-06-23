@@ -66,7 +66,6 @@ func (c *MCPConn) connect() error {
 
 // Navigate to a specified URL
 func (c *MCPConn) Goto(url string) (string, error) {
-	fmt.Printf("Goto: %s\n", url)
 
 	if err := c.connect(); err != nil {
 		return "", fmt.Errorf("browser connect: %w", err)
