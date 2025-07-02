@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
+	"sync"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/chromedp/cdproto/cdp"
@@ -37,6 +38,7 @@ type MCPConn struct {
 	srv       *MCPServer
 	cdpctx    context.Context
 	cdpcancel context.CancelFunc
+	reqctx    context.Context
 }
 
 func (c *MCPConn) Close() {
@@ -127,6 +129,9 @@ type MCPServer struct {
 	Version string
 
 	cdpctx context.Context
+
+	mu      sync.Mutex
+	cancels map[int]context.CancelFunc // map[RequestId]CancelFunc
 }
 
 func NewMCPServer(name, version string, cdpctx context.Context) *MCPServer {
@@ -134,6 +139,7 @@ func NewMCPServer(name, version string, cdpctx context.Context) *MCPServer {
 		Name:    name,
 		Version: version,
 		cdpctx:  cdpctx,
+		cancels: make(map[int]context.CancelFunc),
 	}
 }
 
@@ -297,9 +303,18 @@ func (s *MCPServer) Handle(
 		}, r.Id))
 	case mcp.ToolsCallRequest:
 		slog.Debug("call tool", slog.String("name", r.Params.Name), slog.Int("id", r.Id))
+		toolCtx, cancel := context.WithCancel(ctx)
+		s.mu.Lock()
+		s.cancels[r.Id] = cancel
+		s.mu.Unlock()
+		mcpconn.reqctx = toolCtx
 		go func() {
-			res, err := s.CallTool(ctx, mcpconn, r)
-
+			defer func() {
+				s.mu.Lock()
+				delete(s.cancels, r.Id)
+				s.mu.Unlock()
+			}()
+			res, err := s.CallTool(toolCtx, mcpconn, r)
 			if err != nil {
 				slog.Error("call tool", slog.String("name", r.Params.Name), slog.Any("err", err))
 				senderr = send("message", rpc.NewResponse(mcp.ToolsCallResponse{
@@ -310,7 +325,6 @@ func (s *MCPServer) Handle(
 					}},
 				}, r.Id))
 			}
-
 			senderr = send("message", rpc.NewResponse(mcp.ToolsCallResponse{
 				Content: []mcp.ToolsCallContent{{
 					Type: "text",
@@ -318,13 +332,18 @@ func (s *MCPServer) Handle(
 				}},
 			}, r.Id))
 		}()
-
 	case mcp.NotificationsCancelledRequest:
 		slog.Debug("cancelled",
 			slog.Int("id", r.Params.RequestId),
 			slog.String("reason", r.Params.Reason),
 		)
-		// TODO cancel the corresponding request.
+		s.mu.Lock()
+		cancel, ok := s.cancels[r.Params.RequestId]
+		s.mu.Unlock()
+		if ok {
+			cancel()
+			slog.Info("request cancelled", slog.Int("id", r.Params.RequestId))
+		}
 	}
 
 	if senderr != nil {
