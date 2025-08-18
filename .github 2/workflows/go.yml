@@ -1,0 +1,40 @@
+# https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-go
+name: go
+
+on:
+  pull_request:
+
+    # By default GH trigger on types opened, synchronize and reopened.
+    # see https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+    # Since we skip the job when the PR is in draft state, we want to force CI
+    # running when the PR is marked ready_for_review w/o other change.
+    # see https://github.com/orgs/community/discussions/25722#discussioncomment-3248917
+    types: [opened, synchronize, reopened, ready_for_review]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.1'
+
+      - name: dependencies
+        run: go get .
+
+      - name: build
+        run: go build -v ./...
+
+      - name: test
+        run: go test -v ./...
+
+      - name: lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
