@@ -1,5 +1,6 @@
 # Lightpanda Go MCP server
 
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/lightpanda-io/gomcp)](https://archestra.ai/mcp-catalog/lightpanda-io__gomcp)
 `gomcp` is an [MCP server](https://modelcontextprotocol.io) written in
 [Go](https://go.dev/).
 
